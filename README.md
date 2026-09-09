@@ -27,52 +27,32 @@ The system also contains a visual evidence pipeline as an additional capability 
 
 ByteKnights processes the Ashen Era Archive through the following pipeline:
 
-```text
-Ashen Era Archive
-        |
-        v
-Document Extraction
-(PDF / DOCX / TXT / MD)
-        |
-        +----> OCR Recovery for Scanned PDFs
-        |
-        v
-Text Chunking
-        |
-        v
-SentenceTransformer Embeddings
-        |
-        v
-FAISS Vector Index
-        |
-        +-------------------+
-        |                   |
-        v                   v
-Knowledge Graph       Visual Archive
-        |                   |
-        +---------+---------+
-                  |
-                  v
-            User Question
-                  |
-                  v
-           Question Router
-             /         \
-            /           \
-           v             v
-   Multi-Hop Text     Visual Evidence
-       Pipeline          Pipeline
-           |                |
-           v                v
-     Grounded LLM       Vision LLM
-           \                /
-            \              /
-             v            v
-               Final Answer
-```
+flowchart TD
+    A["Ashen Era Archive"] --> B["Document Extraction<br/>(PDF / DOCX / TXT / MD)"]
 
----
+    B --> C["OCR Recovery<br/>for Scanned PDFs"]
+    B --> D["Text Chunking"]
+    C --> D
 
+    D --> E["SentenceTransformer Embeddings"]
+    E --> F["FAISS Vector Index"]
+
+    F --> G["Knowledge Graph"]
+    F --> H["Visual Archive"]
+
+    G --> I["User Question"]
+    H --> I
+
+    I --> J["Question Router"]
+
+    J --> K["Multi-Hop Text Pipeline"]
+    J --> L["Visual Evidence Pipeline"]
+
+    K --> M["Grounded LLM"]
+    L --> N["Vision LLM"]
+
+    M --> O["Final Answer"]
+    N --> O
 # Text Multi-Hop RAG Pipeline
 
 For text-based questions, ByteKnights performs the following stages:
