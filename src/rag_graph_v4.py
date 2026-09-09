@@ -11,6 +11,7 @@ import networkx as nx
 from dotenv import load_dotenv
 from openai import OpenAI
 from sentence_transformers import SentenceTransformer
+from visual_rag import is_visual_question, answer_visual_question
 
 
 # ============================================================
@@ -1452,8 +1453,49 @@ def process_question(
     question = question.strip()
 
     if not question or len(question) < 3:
-        print("\nPlease enter a meaningful question.")
-        return
+
+        message = "Please enter a meaningful question."
+
+        print(
+            f"\n{message}"
+        )
+
+        return {
+            "answer": message,
+            "mode": "invalid",
+            "sources": [],
+            "image": None
+        }
+
+    # ============================================================
+    # VISUAL QUESTION ROUTING
+    # ============================================================
+
+    if is_visual_question(question):
+
+        print("\nVISUAL QUESTION DETECTED")
+        print("Routing to visual evidence pipeline...")
+
+        result = answer_visual_question(question)
+
+        print("\n================================")
+        print("FINAL ANSWER")
+        print("================================")
+
+        print(result["answer"])
+
+        if result["image"]:
+            print("\n================================")
+            print("IMAGE EVIDENCE")
+            print("================================")
+            print(result["image"])
+
+        return {
+            "answer": result["answer"],
+            "mode": "visual",
+            "sources": [],
+            "image": result["image"]
+        }
 
     # --------------------------------------------------------
     # HOP 1
@@ -1617,11 +1659,21 @@ def process_question(
     )
 
     if not first_results and not graph_entities:
-        print(
-            "\nNo sufficiently relevant archive evidence "
+        message = (
+            "No sufficiently relevant archive evidence "
             "was found for this question."
         )
-        return
+
+        print(
+            f"\n{message}"
+        )
+
+        return {
+            "answer": message,
+            "mode": "text",
+            "sources": [],
+            "image": None
+        }
 
     # --------------------------------------------------------
     # LLM SECOND HOP
@@ -1816,6 +1868,26 @@ def process_question(
                 f"Evidence rank score: "
                 f"{result['final_evidence_score']:.4f}"
             )
+
+    sources = []
+
+    for result in combined:
+
+        sources.append(
+            {
+                "source": result["source"],
+                "page": result.get("page"),
+                "score": result.get("score"),
+                "text": result.get("text", "")
+            }
+        )
+
+    return {
+        "answer": answer,
+        "mode": "text",
+        "sources": sources,
+        "image": None
+    }
 
 
 # ============================================================
