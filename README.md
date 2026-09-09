@@ -1,4 +1,4 @@
-# ByteKnights – Ashen Era Archive Assistant
+# Ashen Era Archive Assistant
 
 An intelligent document assistant developed by **Team ByteKnights** for **CodeFest 2026**.
 
@@ -27,6 +27,7 @@ The system also contains a visual evidence pipeline as an additional capability 
 
 ByteKnights processes the Ashen Era Archive through the following pipeline:
 
+```mermaid
 flowchart TD
     A["Ashen Era Archive"] --> B["Document Extraction<br/>(PDF / DOCX / TXT / MD)"]
 
@@ -53,6 +54,8 @@ flowchart TD
 
     M --> O["Final Answer"]
     N --> O
+```
+
 # Text Multi-Hop RAG Pipeline
 
 For text-based questions, ByteKnights performs the following stages:
