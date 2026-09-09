@@ -10,86 +10,53 @@ The architecture combines semantic retrieval, entity-aware reranking, knowledge-
 
 ## 2. High-Level Architecture
 
-```text
-                   ASHEN ERA ARCHIVE
-                           |
-          +----------------+----------------+
-          |                                 |
-          v                                 v
-   Text Documents                       PNG Images
- PDF/DOCX/TXT/MD                            |
-          |                                 |
-          v                                 |
-  Extraction Pipeline                      |
-          |                                 |
-     Scanned PDF?                           |
-       /       \                            |
-     Yes       No                           |
-      |         |                           |
-      v         |                           |
- Tesseract OCR  |                           |
-      \         /                           |
-       v       v                            |
-    Extracted Records                       |
-           |                                |
-           v                                |
-       Chunking                             |
-     500 words                              |
-    100 overlap                             |
-           |                                |
-           v                                |
- SentenceTransformer                       |
- all-MiniLM-L6-v2                          |
-           |                                |
-           v                                |
-      FAISS Index                           |
-           |                                |
-           +---------------+----------------+
-                           |
-                           v
-                      USER QUESTION
-                           |
-                           v
-                     Question Router
-                       /         \
-                      /           \
-                     v             v
-             TEXT QUESTION     VISUAL QUESTION
-                   |                |
-                   v                v
-            FAISS Retrieval    Image Matching
-                   |                |
-                   v                v
-             Entity Rerank     Candidate Ranking
-                   |                |
-                   v                v
-             First-Hop        Selected Image
-                   |                |
-                   v                v
-          Knowledge Graph      Vision LLM
-                   |                |
-                   v                |
-          Graph Expansion           |
-                   |                |
-                   v                |
-        Graph-Guided Search         |
-                   |                |
-                   v                |
-         LLM Search Planner         |
-                   |                |
-                   v                |
-          Second-Hop Search         |
-                   |                |
-                   v                |
-           Evidence Fusion          |
-                   |                |
-                   v                |
-            Grounded LLM            |
-                   |                |
-                   +-------+--------+
-                           |
-                           v
-                      FINAL ANSWER
+```mermaid
+graph TD
+    Archive["ASHEN ERA ARCHIVE"]
+    
+    Archive --> TextDocs["Text Documents<br/>PDF/DOCX/TXT/MD"]
+    Archive --> Images["PNG Images"]
+    
+    TextDocs --> Extract["Extraction Pipeline"]
+    
+    Extract --> Scanner{"Scanned PDF?"}
+    Scanner -->|Yes| OCR["Tesseract OCR"]
+    Scanner -->|No| Skip["Pass Through"]
+    
+    OCR --> Records["Extracted Records"]
+    Skip --> Records
+    Images --> Skip2["Pass Through"]
+    Skip2 --> Chunking["Chunking<br/>500 words / 100 overlap"]
+    Records --> Chunking
+    
+    Chunking --> Embed["SentenceTransformer<br/>all-MiniLM-L6-v2"]
+    
+    Embed --> FAISS["FAISS Index"]
+    FAISS --> Question["USER QUESTION"]
+    
+    Question --> Router{"Question Router"}
+    
+    Router -->|Text| TextPath["TEXT QUESTION"]
+    Router -->|Visual| VisualPath["VISUAL QUESTION"]
+    
+    TextPath --> FAISS_Ret["FAISS Retrieval"]
+    FAISS_Ret --> EntityRe["Entity Rerank"]
+    EntityRe --> FirstHop["First-Hop"]
+    FirstHop --> KG["Knowledge Graph"]
+    KG --> GraphExp["Graph Expansion"]
+    GraphExp --> GraphGuide["Graph-Guided Search"]
+    GraphGuide --> LLMPlan["LLM Search Planner"]
+    LLMPlan --> SecondHop["Second-Hop Search"]
+    SecondHop --> EvidenceFus["Evidence Fusion"]
+    EvidenceFus --> GroundedLLM["Grounded LLM"]
+    
+    VisualPath --> ImgMatch["Image Matching"]
+    ImgMatch --> CandidateRank["Candidate Ranking"]
+    CandidateRank --> SelectedImg["Selected Image"]
+    SelectedImg --> VisionLLM["Vision LLM"]
+    
+    GroundedLLM --> Answer["FINAL ANSWER"]
+    VisionLLM --> Answer
 ```
 
 ## 3. Document Processing
@@ -225,19 +192,19 @@ The selected image is returned to the Streamlit UI as evidence.
 
 The Streamlit interface provides a unified entry point for both pipelines.
 
-```text
-User Question
-      |
-      v
-Automatic Router
-   /        \
-Text       Visual
- |           |
- v           v
-V4 RAG    Visual RAG
-   \        /
-    v      v
- Streamlit Result
+```mermaid
+graph TD
+    UserQ["User Question"]
+    Router{"Automatic Router"}
+    TextRAG["V4 RAG"]
+    VisualRAG["Visual RAG"]
+    Result["Streamlit Result"]
+    
+    UserQ --> Router
+    Router -->|Text| TextRAG
+    Router -->|Visual| VisualRAG
+    TextRAG --> Result
+    VisualRAG --> Result
 ```
 
 For text questions, the UI displays the final answer and expandable evidence sources.
